@@ -81,16 +81,12 @@ button{min-height:48px;border:0;border-radius:12px;padding:10px 14px;font-weight
 <div id="toast" class="toast"></div>
 
 <script>
-const initial=[
-{barcode:"4001234567891",number:"ART-001",name:"Schraube M8 x 30",stock:150,min:20,unit:"Stück",location:"Regal A1"},
-{barcode:"4001234567808",number:"ART-002",name:"Mutter M8",stock:85,min:20,unit:"Stück",location:"Regal A1"},
-{barcode:"4001234567815",number:"ART-003",name:"Unterlegscheibe M8",stock:230,min:30,unit:"Stück",location:"Regal B2"}
-];
-let articles=JSON.parse(localStorage.getItem("lager_articles")||"null")||initial;
-let moves=JSON.parse(localStorage.getItem("lager_moves")||"[]");
+const initial=[{barcode:"LAGER-001",number:"ART-001",name:"Schraube M8 x 30",stock:150,min:20,unit:"Stück",location:"Regal A1"},{barcode:"LAGER-002",number:"ART-002",name:"Mutter M8",stock:85,min:20,unit:"Stück",location:"Regal A1"},{barcode:"LAGER-003",number:"ART-003",name:"Unterlegscheibe M8",stock:230,min:30,unit:"Stück",location:"Regal B2"}];
+let articles=JSON.parse(localStorage.getItem("lager_articles_v3")||"null")||initial;
+let moves=JSON.parse(localStorage.getItem("lager_moves_v3")||"[]");
 let selected=null, scanner=null, scanLocked=false;
 
-function save(){localStorage.setItem("lager_articles",JSON.stringify(articles));localStorage.setItem("lager_moves",JSON.stringify(moves))}
+function save(){localStorage.setItem("lager_articles_v3",JSON.stringify(articles));localStorage.setItem("lager_moves_v3",JSON.stringify(moves))}
 function toast(t){const e=document.getElementById("toast");e.textContent=t;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),2400)}
 function findArticle(){
  const code=document.getElementById("barcode").value.trim();
