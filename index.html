@@ -82,9 +82,9 @@ button{min-height:48px;border:0;border-radius:12px;padding:10px 14px;font-weight
 
 <script>
 const initial=[
-{barcode:"4001234567890",number:"ART-001",name:"Schraube M8 x 30",stock:150,min:20,unit:"Stück",location:"Regal A1"},
-{barcode:"4001234567891",number:"ART-002",name:"Mutter M8",stock:85,min:20,unit:"Stück",location:"Regal A1"},
-{barcode:"4001234567892",number:"ART-003",name:"Unterlegscheibe M8",stock:230,min:30,unit:"Stück",location:"Regal B2"}
+{barcode:"4001234567891",number:"ART-001",name:"Schraube M8 x 30",stock:150,min:20,unit:"Stück",location:"Regal A1"},
+{barcode:"4001234567808",number:"ART-002",name:"Mutter M8",stock:85,min:20,unit:"Stück",location:"Regal A1"},
+{barcode:"4001234567815",number:"ART-003",name:"Unterlegscheibe M8",stock:230,min:30,unit:"Stück",location:"Regal B2"}
 ];
 let articles=JSON.parse(localStorage.getItem("lager_articles")||"null")||initial;
 let moves=JSON.parse(localStorage.getItem("lager_moves")||"[]");
