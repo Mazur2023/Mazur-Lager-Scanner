@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1f4e78">
+<title>Lager Scanner – Kamera</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f3f6f9;color:#1f2937}
+header{background:#1f4e78;color:#fff;padding:16px;position:sticky;top:0;z-index:3}
+header h1{margin:0;font-size:21px} header small{opacity:.85}
+main{max-width:720px;margin:auto;padding:12px}
+.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 5px #0001}
+h2{font-size:19px;margin:0 0 12px}
+input,button{font:inherit}
+input{width:100%;min-height:48px;border:1px solid #d9e1e8;border-radius:12px;padding:10px 12px}
+button{min-height:48px;border:0;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer}
+.primary{background:#1f4e78;color:#fff}.secondary{background:#e8eef4;color:#1f2937}
+.danger{background:#fde8e8;color:#c62828}.success{background:#e6f4ea;color:#2e7d32}
+.full{width:100%;margin-top:8px}
+.row{display:flex;gap:8px}.row>*{flex:1}
+#reader{width:100%;overflow:hidden;border-radius:12px;background:#111;display:none}
+#reader.active{display:block}
+#selected{display:none}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.badge{display:inline-block;background:#eef3f7;border-radius:999px;padding:7px 10px;font-weight:800}
+.low{color:#c62828}
+.article{border-top:1px solid #edf0f2;padding:12px 0;display:flex;justify-content:space-between;gap:12px}
+.article:first-child{border-top:0}.article small{display:block;color:#6b7280;margin-top:3px}
+.stock{font-weight:900;white-space:nowrap}
+.note{font-size:13px;color:#6b7280;line-height:1.5}
+.toast{position:fixed;left:12px;right:12px;bottom:18px;background:#222;color:#fff;padding:14px;border-radius:12px;text-align:center;display:none;z-index:5}
+.toast.show{display:block}
+</style>
+<script src="https://unpkg.com/html5-qrcode" defer></script>
+</head>
+<body>
+<header><h1>📦 Lager Scanner</h1><small>Kamera-Scanner – Testversion</small></header>
+
+<main>
+<section class="card">
+<h2>📷 Barcode scannen</h2>
+<div id="reader"></div>
+<button id="start" class="primary full" onclick="startScanner()">Kamera starten</button>
+<button id="stop" class="secondary full" onclick="stopScanner()" style="display:none">Scanner stoppen</button>
+<p class="note">Beim ersten Start fragt dein Browser nach Zugriff auf die Kamera. Bitte erlauben. Für Smartphones muss die Seite normalerweise über HTTPS geöffnet werden.</p>
+</section>
+
+<section class="card">
+<h2>Oder Barcode manuell eingeben</h2>
+<div class="row">
+<input id="barcode" inputmode="numeric" placeholder="z. B. 4001234567890">
+<button class="secondary" onclick="findArticle()">Suchen</button>
+</div>
+</section>
+
+<section id="selected" class="card">
+<h2 id="name"></h2>
+<p id="number"></p>
+<p><span class="badge" id="stock"></span></p>
+<p><strong>Barcode:</strong> <span id="code"></span><br><strong>Lagerort:</strong> <span id="location"></span></p>
+<label for="qty"><strong>Menge</strong></label>
+<input id="qty" type="number" min="1" value="1">
+<div class="actions">
+<button class="danger" onclick="book(-1)">➖ Entnehmen</button>
+<button class="success" onclick="book(1)">➕ Einlagern</button>
+</div>
+</section>
+
+<section class="card">
+<h2>Bestand</h2>
+<input id="filter" placeholder="Artikel suchen..." oninput="render()">
+<div id="list"></div>
+</section>
+
+<section class="card">
+<h2>Letzte Bewegungen</h2>
+<div id="moves"></div>
+</section>
+</main>
+<div id="toast" class="toast"></div>
+
+<script>
+const initial=[
+{barcode:"4001234567891",number:"ART-001",name:"Schraube M8 x 30",stock:150,min:20,unit:"Stück",location:"Regal A1"},
+{barcode:"4001234567808",number:"ART-002",name:"Mutter M8",stock:85,min:20,unit:"Stück",location:"Regal A1"},
+{barcode:"4001234567815",number:"ART-003",name:"Unterlegscheibe M8",stock:230,min:30,unit:"Stück",location:"Regal B2"}
+];
+let articles=JSON.parse(localStorage.getItem("lager_articles")||"null")||initial;
+let moves=JSON.parse(localStorage.getItem("lager_moves")||"[]");
+let selected=null, scanner=null, scanLocked=false;
+
+function save(){localStorage.setItem("lager_articles",JSON.stringify(articles));localStorage.setItem("lager_moves",JSON.stringify(moves))}
+function toast(t){const e=document.getElementById("toast");e.textContent=t;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),2400)}
+function findArticle(){
+ const code=document.getElementById("barcode").value.trim();
+ selected=articles.find(a=>a.barcode===code);
+ if(!selected){toast("Artikel nicht gefunden.");return}
+ showSelected();
+}
+function showSelected(){
+ document.getElementById("selected").style.display="block";
+ document.getElementById("name").textContent=selected.name;
+ document.getElementById("number").textContent=selected.number;
+ document.getElementById("code").textContent=selected.barcode;
+ document.getElementById("location").textContent=selected.location;
+ updateSelected();
+ document.getElementById("selected").scrollIntoView({behavior:"smooth",block:"start"});
+}
+function updateSelected(){
+ const e=document.getElementById("stock");e.textContent=selected.stock+" "+selected.unit;e.className="badge"+(selected.stock<=selected.min?" low":"");
+}
+function book(direction){
+ if(!selected)return;
+ const qty=parseInt(document.getElementById("qty").value,10);
+ if(!qty||qty<1){toast("Bitte eine gültige Menge eingeben.");return}
+ if(direction<0&&qty>selected.stock){toast("Nicht genügend Bestand.");return}
+ const before=selected.stock;selected.stock+=direction*qty;
+ moves.unshift({time:new Date().toLocaleString("de-DE"),name:selected.name,type:direction<0?"Entnahme":"Einlagerung",qty,before,after:selected.stock});
+ save();updateSelected();render();toast((direction<0?"Entnommen: ":"Eingelagert: ")+qty+" "+selected.unit);
+ document.getElementById("qty").value=1;
+}
+function render(){
+ const q=document.getElementById("filter").value.toLowerCase();
+ const f=articles.filter(a=>(a.name+" "+a.number+" "+a.barcode+" "+a.location).toLowerCase().includes(q));
+ document.getElementById("list").innerHTML=f.map(a=>`<div class="article"><div><strong>${a.name}</strong><small>${a.number} · ${a.location}</small></div><div class="stock ${a.stock<=a.min?"low":""}">${a.stock} ${a.unit}</div></div>`).join("")||"<p>Keine Artikel gefunden.</p>";
+ document.getElementById("moves").innerHTML=moves.slice(0,15).map(m=>`<div class="article"><div><strong>${m.name}</strong><small>${m.time} · ${m.before} → ${m.after}</small></div><div class="stock ${m.type==="Entnahme"?"low":""}">${m.type==="Entnahme"?"-":"+"}${m.qty}</div></div>`).join("")||"<p>Noch keine Bewegungen.</p>";
+}
+
+async function startScanner(){
+ if(typeof Html5Qrcode==="undefined"){toast("Scanner wird noch geladen. Bitte kurz warten und erneut versuchen.");return}
+ if(scanner)return;
+ scanner=new Html5Qrcode("reader");
+ document.getElementById("reader").classList.add("active");
+ document.getElementById("start").style.display="none";
+ document.getElementById("stop").style.display="block";
+ scanLocked=false;
+ try{
+   await scanner.start(
+     {facingMode:"environment"},
+     {fps:10,qrbox:{width:280,height:160}},
+     decodedText=>{
+       if(scanLocked)return;
+       scanLocked=true;
+       document.getElementById("barcode").value=decodedText;
+       const article=articles.find(a=>a.barcode===String(decodedText));
+       if(article){
+         selected=article;
+         showSelected();
+         toast("Artikel gefunden: "+article.name);
+         stopScanner();
+       }else{
+         toast("Barcode "+decodedText+" nicht in der Artikelliste.");
+         setTimeout(()=>scanLocked=false,1500);
+       }
+     },
+     ()=>{}
+   );
+ }catch(err){
+   console.error(err);
+   toast("Kamera konnte nicht gestartet werden. Kamera-Berechtigung prüfen.");
+   await stopScanner();
+ }
+}
+async function stopScanner(){
+ if(scanner){
+   try{if(scanner.isScanning)await scanner.stop();}catch(e){}
+   try{await scanner.clear();}catch(e){}
+ }
+ scanner=null;scanLocked=false;
+ document.getElementById("reader").classList.remove("active");
+ document.getElementById("start").style.display="block";
+ document.getElementById("stop").style.display="none";
+}
+document.getElementById("barcode").addEventListener("keydown",e=>{if(e.key==="Enter")findArticle()});
+render();
+</script>
+</body>
+</html>
