@@ -13,7 +13,10 @@
 <h2>➕ Artikel hinzufügen</h2>
 <div class="row">
   <input id="newNumber" placeholder="Artikelnummer, z. B. ART-0004">
-  <input id="newBarcode" placeholder="Barcode, z. B. ART-0004">
+  <div style="flex:1;display:flex;gap:6px">
+    <input id="newBarcode" placeholder="Barcode, z. B. ART-0004">
+    <button class="secondary" type="button" onclick="startNewArticleScanner()">📷</button>
+  </div>
 </div>
 <input id="newName" placeholder="Artikelname" style="margin-top:8px">
 <div class="row" style="margin-top:8px">
@@ -25,6 +28,10 @@
   <input id="newLocation" placeholder="Lagerort">
 </div>
 <button class="primary full" onclick="addArticle()">Artikel speichern</button>
+<div id="newArticleScannerWrap" style="display:none;margin-top:10px">
+  <div id="newArticleReader"></div>
+  <button class="secondary full" type="button" onclick="stopNewArticleScanner()">Scanner schließen</button>
+</div>
 </section>
 
 <section id="editCard" class="card" style="display:none">
@@ -88,6 +95,80 @@ async function book(dir){
   }
 }
 
+
+let newArticleScanner=null;
+let newArticleScanLocked=false;
+
+async function startNewArticleScanner(){
+  if(!window.Html5Qrcode){
+    toast("Scanner wird geladen – bitte erneut tippen.");
+    const s=document.createElement("script");
+    s.src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js";
+    s.onload=()=>toast("Scanner bereit – bitte erneut auf 📷 tippen.");
+    s.onerror=()=>toast("Scanner-Bibliothek konnte nicht geladen werden.");
+    document.head.appendChild(s);
+    return;
+  }
+  if(newArticleScanner)return;
+
+  const wrap=document.getElementById("newArticleScannerWrap");
+  wrap.style.display="block";
+  newArticleScanner=new Html5Qrcode("newArticleReader");
+  newArticleScanLocked=false;
+
+  try{
+    const cameras=await Html5Qrcode.getCameras();
+    if(!cameras||!cameras.length)throw new Error("Keine Kamera gefunden");
+    const preferred=cameras.find(c=>/back|rear|environment|rück/i.test(c.label))||cameras[0];
+
+    await newArticleScanner.start(
+      preferred.id,
+      {fps:10,qrbox:{width:280,height:160}},
+      async text=>{
+        if(newArticleScanLocked)return;
+        newArticleScanLocked=true;
+        const code=text.trim();
+        document.getElementById("newBarcode").value=code;
+
+        try{
+          const existing=await api("/rest/v1/artikel?select=id,name,artikelnummer&barcode=eq."+encodeURIComponent(code)+"&limit=1");
+          if(existing&&existing.length){
+            toast("Barcode bereits vergeben: "+existing[0].name);
+            document.getElementById("newBarcode").value="";
+            newArticleScanLocked=false;
+            return;
+          }
+          // For our labels, barcode and article number use the same code.
+          if(!document.getElementById("newNumber").value.trim()){
+            document.getElementById("newNumber").value=code;
+          }
+          toast("Barcode erkannt: "+code);
+          await stopNewArticleScanner();
+        }catch(e){
+          console.error(e);
+          toast("Barcode konnte nicht geprüft werden.");
+          newArticleScanLocked=false;
+        }
+      },
+      ()=>{}
+    );
+  }catch(e){
+    console.error(e);
+    toast("Kamera konnte nicht gestartet werden.");
+    await stopNewArticleScanner();
+  }
+}
+
+async function stopNewArticleScanner(){
+  if(newArticleScanner){
+    try{if(newArticleScanner.isScanning)await newArticleScanner.stop()}catch(e){}
+    try{await newArticleScanner.clear()}catch(e){}
+  }
+  newArticleScanner=null;
+  newArticleScanLocked=false;
+  document.getElementById("newArticleScannerWrap").style.display="none";
+}
+
 async function addArticle(){
   const artikelnummer=document.getElementById("newNumber").value.trim();
   const barcodeCode=document.getElementById("newBarcode").value.trim();
@@ -102,6 +183,11 @@ async function addArticle(){
     toast("Bestand und Mindestbestand müssen gültige Zahlen sein.");return
   }
   try{
+    const duplicate=await api("/rest/v1/artikel?select=id,name&barcode=eq."+encodeURIComponent(barcodeCode)+"&limit=1");
+    if(duplicate&&duplicate.length){
+      toast("Dieser Barcode ist bereits vergeben: "+duplicate[0].name);
+      return;
+    }
     const data=await api("/rest/v1/artikel",{
       method:"POST",
       headers:{"Prefer":"return=representation"},
@@ -159,6 +245,11 @@ async function saveArticle(){
   if(!id||!name||!barcodeCode){toast("Bitte Artikelname und Barcode eingeben.");return}
   if(Number.isNaN(mindestbestand)||mindestbestand<0){toast("Mindestbestand muss gültig sein.");return}
   try{
+    const duplicate=await api("/rest/v1/artikel?select=id,name&barcode=eq."+encodeURIComponent(barcodeCode)+"&id=neq."+id+"&limit=1");
+    if(duplicate&&duplicate.length){
+      toast("Dieser Barcode ist bereits vergeben: "+duplicate[0].name);
+      return;
+    }
     const data=await api("/rest/v1/artikel?id=eq."+id,{
       method:"PATCH",headers:{"Prefer":"return=representation"},
       body:JSON.stringify({
