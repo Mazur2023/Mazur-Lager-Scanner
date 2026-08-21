@@ -23,8 +23,10 @@
 <section class="card"><h2>Barcode manuell eingeben</h2><div class="row"><input id="barcode" placeholder="z. B. LAGER-001"><button class="secondary" onclick="findArticle()">Suchen</button></div><div id="status" class="status">Verbinde …</div></section>
 <section id="selected" class="card"><h2 id="name"></h2><p id="number"></p><p><span class="badge" id="stock"></span></p><p><strong>Barcode:</strong> <span id="code"></span><br><strong>Lagerort:</strong> <span id="location"></span></p><label><strong>Menge</strong></label><input id="qty" type="number" min="1" value="1"><div class="actions"><button class="danger" onclick="book(-1)">➖ Entnehmen</button><button class="success" onclick="book(1)">➕ Einlagern</button></div></section>
 
-<section class="card">
-<h2>➕ Artikel hinzufügen</h2>
+<button type="button" class="collapse-head" onclick="toggleCollapse('addCollapse',this)">
+<span>➕ Artikel hinzufügen</span><span class="collapse-plus">+</span>
+</button>
+<div id="addCollapse" class="collapse-body">
 <div class="row">
   <input id="newNumber" placeholder="Artikelnummer, z. B. ART-0004">
   <div style="flex:1;display:flex;gap:6px">
@@ -45,6 +47,7 @@
 <div id="newArticleScannerWrap" style="display:none;margin-top:10px">
   <div id="newArticleReader"></div>
   <button class="secondary full" type="button" onclick="stopNewArticleScanner()">Scanner schließen</button>
+</div>
 </div>
 </section>
 
@@ -73,15 +76,13 @@
 <button type="button" class="secondary" onclick="clearInventoryFilter()">✕</button>
 </div><input id="filter" placeholder="Artikel suchen..." oninput="render()"><div id="list"></div></div>
 </section>
-<section class="card"><h2>Letzte Bewegungen</h2><div id="moves"></div></section>
-<section class="card">
-<button type="button" class="collapse-head" onclick="toggleCollapse('historyCollapse',this);loadHistorySafe()">
+<section class="card"><button type="button" class="collapse-head" onclick="toggleCollapse('historyCollapse',this);loadHistorySafe()">
 <span>📋 Bewegungen / Historie</span><span class="collapse-plus">+</span>
 </button>
 <div id="historyCollapse" class="collapse-body">
-<div id="historySafeList"><p class="note">Zum Öffnen auf + drücken.</p></div>
-</div>
+<div id="historySafeList"><p class="note">Zum Öffnen auf + drücken.</p></div></div>
 </section>
+
 
 </main><div id="toast" class="toast"></div>
 <script>
