@@ -228,8 +228,47 @@ async function addArticle(){
   }
 }
 
+
+async function deleteArticle(id){
+  const a=articles.find(x=>x.id===id);
+  if(!a)return;
+
+  const confirmed=confirm(
+    "Artikel wirklich löschen?\n\n"+
+    a.name+"\n"+
+    "Artikelnummer: "+(a.artikelnummer||"-")+"\n"+
+    "Barcode: "+(a.barcode||"-")+"\n\n"+
+    "Die bisherigen Bewegungen bleiben erhalten, der Artikel selbst wird entfernt."
+  );
+  if(!confirmed)return;
+
+  try{
+    // Remove movement history first if the database has a foreign-key
+    // without cascade. The user explicitly confirms deletion.
+    await api("/rest/v1/bewegungen?artikel_id=eq."+encodeURIComponent(id),{
+      method:"DELETE"
+    });
+
+    await api("/rest/v1/artikel?id=eq."+encodeURIComponent(id),{
+      method:"DELETE"
+    });
+
+    if(selected && selected.id===id){
+      selected=null;
+      document.getElementById("selected").style.display="none";
+    }
+
+    await load();
+    toast("Artikel wurde gelöscht.");
+  }catch(e){
+    console.error(e);
+    toast("Artikel konnte nicht gelöscht werden.");
+  }
+}
+
 function render(){let q=document.getElementById("filter").value.toLowerCase(),f=articles.filter(a=>(a.name+" "+(a.artikelnummer||"")+" "+a.barcode+" "+(a.lagerort||"")).toLowerCase().includes(q));document.getElementById("list").innerHTML=f.map(a=>`<div class="article" onclick="selectArticle(${a.id})" style="cursor:pointer"><div><strong>${a.name}</strong><small>${a.artikelnummer||""} · ${a.lagerort||""} · ${a.barcode}</small></div><div class="stock ${a.bestand<=a.mindestbestand?"low":""}">${a.bestand} ${a.einheit}<br><button class="secondary" style="margin-top:6px;min-height:38px;padding:6px 10px" onclick="event.stopPropagation();selectArticle(${a.id})">Auswählen</button>
-<button class="secondary" style="margin-top:6px;min-height:38px;padding:6px 10px" onclick="event.stopPropagation();editArticle(${a.id})">✏️ Bearbeiten</button></div></div>`).join("")||"<p>Keine Artikel gefunden.</p>";document.getElementById("moves").innerHTML=moves.map(m=>`<div class="article"><div><strong>${m.artikel?.name||"Artikel"}</strong><small>${new Date(m.zeitpunkt).toLocaleString("de-DE")} · ${m.bestand_vorher} → ${m.bestand_nachher}</small></div><div class="stock ${m.typ==="Entnahme"?"low":""}">${m.typ==="Entnahme"?"-":"+"}${m.menge}</div></div>`).join("")||"<p>Noch keine Bewegungen.</p>"}
+<button class="secondary" style="margin-top:6px;min-height:38px;padding:6px 10px" onclick="event.stopPropagation();editArticle(${a.id})">✏️ Bearbeiten</button>
+<button class="danger" style="margin-top:6px;min-height:38px;padding:6px 10px" onclick="event.stopPropagation();deleteArticle(${a.id})">🗑️ Löschen</button></div></div>`).join("")||"<p>Keine Artikel gefunden.</p>";document.getElementById("moves").innerHTML=moves.map(m=>`<div class="article"><div><strong>${m.artikel?.name||"Artikel"}</strong><small>${new Date(m.zeitpunkt).toLocaleString("de-DE")} · ${m.bestand_vorher} → ${m.bestand_nachher}</small></div><div class="stock ${m.typ==="Entnahme"?"low":""}">${m.typ==="Entnahme"?"-":"+"}${m.menge}</div></div>`).join("")||"<p>Noch keine Bewegungen.</p>"}
 async function startScanner(){if(!window.Html5Qrcode)return toast("Scanner lädt noch.");scanner=new Html5Qrcode("reader");document.getElementById("reader").classList.add("active");start.style.display="none";stop.style.display="block";locked=false;try{await scanner.start({facingMode:"environment"},{fps:10,qrbox:{width:280,height:160}},async text=>{if(locked)return;locked=true;barcode.value=text;await findArticle();if(selected){toast("Artikel gefunden: "+selected.name);await stopScanner()}else setTimeout(()=>locked=false,1200)},()=>{})}catch(e){toast("Kamera konnte nicht gestartet werden.");await stopScanner()}}
 async function stopScanner(){if(scanner){try{if(scanner.isScanning)await scanner.stop()}catch(e){}try{await scanner.clear()}catch(e){}}scanner=null;locked=false;reader.classList.remove("active");start.style.display="block";stop.style.display="none"}
 barcode.addEventListener("keydown",e=>{if(e.key==="Enter")findArticle()});load();setInterval(load,15000);
