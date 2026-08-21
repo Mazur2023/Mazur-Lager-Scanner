@@ -8,6 +8,25 @@
 <section class="card"><h2>📷 Barcode scannen</h2><div id="reader"></div><button id="start" class="primary full" onclick="startScanner()">Kamera starten</button><button id="stop" class="secondary full" onclick="stopScanner()" style="display:none">Scanner stoppen</button><p class="note">Der Bestand wird zentral aus Supabase geladen.</p></section>
 <section class="card"><h2>Barcode manuell eingeben</h2><div class="row"><input id="barcode" placeholder="z. B. LAGER-001"><button class="secondary" onclick="findArticle()">Suchen</button></div><div id="status" class="status">Verbinde …</div></section>
 <section id="selected" class="card"><h2 id="name"></h2><p id="number"></p><p><span class="badge" id="stock"></span></p><p><strong>Barcode:</strong> <span id="code"></span><br><strong>Lagerort:</strong> <span id="location"></span></p><label><strong>Menge</strong></label><input id="qty" type="number" min="1" value="1"><div class="actions"><button class="danger" onclick="book(-1)">➖ Entnehmen</button><button class="success" onclick="book(1)">➕ Einlagern</button></div></section>
+
+<section class="card">
+<h2>➕ Artikel hinzufügen</h2>
+<div class="row">
+  <input id="newNumber" placeholder="Artikelnummer, z. B. ART-004">
+  <input id="newBarcode" placeholder="Barcode, z. B. LAGER-004">
+</div>
+<input id="newName" placeholder="Artikelname, z. B. Sechskantschraube M10 x 40" style="margin-top:8px">
+<div class="row" style="margin-top:8px">
+  <input id="newStock" type="number" min="0" value="0" placeholder="Anfangsbestand">
+  <input id="newMin" type="number" min="0" value="0" placeholder="Mindestbestand">
+</div>
+<div class="row" style="margin-top:8px">
+  <input id="newUnit" value="Stück" placeholder="Einheit">
+  <input id="newLocation" placeholder="Lagerort, z. B. Regal C1">
+</div>
+<button class="primary full" onclick="addArticle()">Artikel speichern</button>
+<p class="note">Der neue Artikel wird sofort zentral gespeichert und ist anschließend auf allen Handys verfügbar.</p>
+</section>
 <section class="card"><h2>Bestand</h2><input id="filter" placeholder="Artikel suchen..." oninput="render()"><div id="list"></div></section>
 <section class="card"><h2>Letzte Bewegungen</h2><div id="moves"></div></section></main><div id="toast" class="toast"></div>
 <script>
@@ -49,6 +68,76 @@ async function book(dir){
     toast(msg.includes("Nicht genügend Bestand")?"Nicht genügend Bestand.":"Buchung fehlgeschlagen.");
   }
 }
+
+async function addArticle(){
+  const artikelnummer=document.getElementById("newNumber").value.trim();
+  const barcodeCode=document.getElementById("newBarcode").value.trim();
+  const name=document.getElementById("newName").value.trim();
+  const bestand=parseInt(document.getElementById("newStock").value,10);
+  const mindestbestand=parseInt(document.getElementById("newMin").value,10);
+  const einheit=document.getElementById("newUnit").value.trim()||"Stück";
+  const lagerort=document.getElementById("newLocation").value.trim();
+
+  if(!name || !barcodeCode){
+    toast("Bitte mindestens Artikelname und Barcode eingeben.");
+    return;
+  }
+  if(Number.isNaN(bestand)||bestand<0||Number.isNaN(mindestbestand)||mindestbestand<0){
+    toast("Bestand und Mindestbestand müssen gültige Zahlen sein.");
+    return;
+  }
+
+  try{
+    const data=await api("/rest/v1/artikel",{
+      method:"POST",
+      headers:{"Prefer":"return=representation"},
+      body:JSON.stringify({
+        barcode:barcodeCode,
+        artikelnummer:artikelnummer||null,
+        name:name,
+        bestand:bestand,
+        mindestbestand:mindestbestand,
+        einheit:einheit,
+        lagerort:lagerort||null
+      })
+    });
+
+    const newArticle=Array.isArray(data)?data[0]:data;
+
+    if(bestand>0 && newArticle){
+      await api("/rest/v1/bewegungen",{
+        method:"POST",
+        body:JSON.stringify({
+          artikel_id:newArticle.id,
+          typ:"Einlagerung",
+          menge:bestand,
+          bestand_vorher:0,
+          bestand_nachher:bestand
+        })
+      });
+    }
+
+    document.getElementById("newNumber").value="";
+    document.getElementById("newBarcode").value="";
+    document.getElementById("newName").value="";
+    document.getElementById("newStock").value="0";
+    document.getElementById("newMin").value="0";
+    document.getElementById("newUnit").value="Stück";
+    document.getElementById("newLocation").value="";
+
+    await load();
+    toast("Artikel erfolgreich angelegt.");
+  }catch(e){
+    console.error(e);
+    const msg=String(e.message||"");
+    if(msg.includes("duplicate")||msg.includes("unique")){
+      toast("Dieser Barcode ist bereits vergeben.");
+    }else{
+      toast("Artikel konnte nicht angelegt werden.");
+    }
+  }
+}
+
 function render(){let q=document.getElementById("filter").value.toLowerCase(),f=articles.filter(a=>(a.name+" "+(a.artikelnummer||"")+" "+a.barcode+" "+(a.lagerort||"")).toLowerCase().includes(q));document.getElementById("list").innerHTML=f.map(a=>`<div class="article" onclick="selectArticle(${a.id})" style="cursor:pointer"><div><strong>${a.name}</strong><small>${a.artikelnummer||""} · ${a.lagerort||""} · ${a.barcode}</small></div><div class="stock ${a.bestand<=a.mindestbestand?"low":""}">${a.bestand} ${a.einheit}<br><button class="secondary" style="margin-top:6px;min-height:38px;padding:6px 10px" onclick="event.stopPropagation();selectArticle(${a.id})">Auswählen</button></div></div>`).join("")||"<p>Keine Artikel gefunden.</p>";document.getElementById("moves").innerHTML=moves.map(m=>`<div class="article"><div><strong>${m.artikel?.name||"Artikel"}</strong><small>${new Date(m.zeitpunkt).toLocaleString("de-DE")} · ${m.bestand_vorher} → ${m.bestand_nachher}</small></div><div class="stock ${m.typ==="Entnahme"?"low":""}">${m.typ==="Entnahme"?"-":"+"}${m.menge}</div></div>`).join("")||"<p>Noch keine Bewegungen.</p>"}
 async function startScanner(){if(!window.Html5Qrcode)return toast("Scanner lädt noch.");scanner=new Html5Qrcode("reader");document.getElementById("reader").classList.add("active");start.style.display="none";stop.style.display="block";locked=false;try{await scanner.start({facingMode:"environment"},{fps:10,qrbox:{width:280,height:160}},async text=>{if(locked)return;locked=true;barcode.value=text;await findArticle();if(selected){toast("Artikel gefunden: "+selected.name);await stopScanner()}else setTimeout(()=>locked=false,1200)},()=>{})}catch(e){toast("Kamera konnte nicht gestartet werden.");await stopScanner()}}
 async function stopScanner(){if(scanner){try{if(scanner.isScanning)await scanner.stop()}catch(e){}try{await scanner.clear()}catch(e){}}scanner=null;locked=false;reader.classList.remove("active");start.style.display="block";stop.style.display="none"}
