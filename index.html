@@ -2,13 +2,30 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#1f4e78"><title>Lager Scanner – Zentral</title>
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:system-ui;background:#f3f6f9;color:#1f2937}header{background:#1f4e78;color:white;padding:16px;position:sticky;top:0}header h1{margin:0;font-size:21px}main{max-width:720px;margin:auto;padding:12px}.card{background:white;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 5px #0001}h2{font-size:19px;margin:0 0 12px}input,button{font:inherit}input{width:100%;min-height:48px;border:1px solid #d9e1e8;border-radius:12px;padding:10px 12px}button{min-height:48px;border:0;border-radius:12px;padding:10px 14px;font-weight:700}.primary{background:#1f4e78;color:white}.secondary{background:#e8eef4}.danger{background:#fde8e8;color:#c62828}.success{background:#e6f4ea;color:#2e7d32}.full{width:100%;margin-top:8px}.row{display:flex;gap:8px}.row>*{flex:1}#reader{display:none;width:100%;overflow:hidden;border-radius:12px;background:#111}#reader.active{display:block}#selected{display:none}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.actions button{font-size:16px;min-height:54px}.badge{display:inline-block;background:#eef3f7;border-radius:999px;padding:7px 10px;font-weight:800}.low{color:#c62828}.article{border-top:1px solid #edf0f2;padding:12px 0;display:flex;justify-content:space-between;gap:12px}.article small{display:block;color:#6b7280}.stock{font-weight:900;white-space:nowrap}.note{font-size:13px;color:#6b7280}.row{display:flex;gap:8px}.row>*{min-width:0}.status{font-size:13px;color:#2e7d32;margin-top:8px}.error{color:#c62828}.toast{position:fixed;left:12px;right:12px;bottom:18px;background:#222;color:#fff;padding:14px;border-radius:12px;text-align:center;display:none}.toast.show{display:block}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui;background:#f3f6f9;color:#1f2937}header{background:#1f4e78;color:white;padding:16px;position:sticky;top:0}header h1{margin:0;font-size:21px}main{max-width:720px;margin:auto;padding:12px}.card{background:white;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 5px #0001}h2{font-size:19px;margin:0 0 12px}input,button{font:inherit}input{width:100%;min-height:48px;border:1px solid #d9e1e8;border-radius:12px;padding:10px 12px}button{min-height:48px;border:0;border-radius:12px;padding:10px 14px;font-weight:700}.primary{background:#1f4e78;color:white}.secondary{background:#e8eef4}.danger{background:#fde8e8;color:#c62828}.success{background:#e6f4ea;color:#2e7d32}.full{width:100%;margin-top:8px}.row{display:flex;gap:8px}.row>*{flex:1}#reader{display:none;width:100%;overflow:hidden;border-radius:12px;background:#111}#reader.active{display:block}#selected{display:none}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.actions button{font-size:16px;min-height:54px}.badge{display:inline-block;background:#eef3f7;border-radius:999px;padding:7px 10px;font-weight:800}.low{color:#c62828}.article{border-top:1px solid #edf0f2;padding:12px 0;display:flex;justify-content:space-between;gap:12px}.article small{display:block;color:#6b7280}.stock{font-weight:900;white-space:nowrap}.note{font-size:13px;color:#6b7280}.status{font-size:13px;color:#2e7d32;margin-top:8px}.error{color:#c62828}.toast{position:fixed;left:12px;right:12px;bottom:18px;background:#222;color:#fff;padding:14px;border-radius:12px;text-align:center;display:none}.toast.show{display:block}
 </style><script src="https://unpkg.com/html5-qrcode" defer></script></head><body>
 <header><h1>📦 Lager Scanner</h1><small>Zentraler Bestand – Supabase</small></header><main>
-<section class="card"><h2>📷 Barcode scannen</h2><div id="reader"></div><button id="start" class="primary full" onclick="startScanner()">Kamera starten</button><button id="stop" class="secondary full" onclick="stopScanner()" style="display:none">Scanner stoppen</button><p class="note">Der Bestand wird zentral aus Supabase geladen.</p></section>
+<section class="card"><h2>📷 Barcode scannen</h2><div id="reader"></div><button id="start" class="primary full" onclick="startScanner()">📷 Kamera starten</button><button id="stop" class="secondary full" onclick="stopScanner()" style="display:none">Scanner stoppen</button><p class="note">Der Bestand wird zentral aus Supabase geladen.</p></section>
 <section class="card"><h2>Barcode manuell eingeben</h2><div class="row"><input id="barcode" placeholder="z. B. LAGER-001"><button class="secondary" onclick="findArticle()">Suchen</button></div><div id="status" class="status">Verbinde …</div></section>
 <section id="selected" class="card"><h2 id="name"></h2><p id="number"></p><p><span class="badge" id="stock"></span></p><p><strong>Barcode:</strong> <span id="code"></span><br><strong>Lagerort:</strong> <span id="location"></span></p><label><strong>Menge</strong></label><input id="qty" type="number" min="1" value="1"><div class="actions"><button class="danger" onclick="book(-1)">➖ Entnehmen</button><button class="success" onclick="book(1)">➕ Einlagern</button></div></section>
 
+<section class="card">
+<h2>➕ Artikel hinzufügen</h2>
+<div class="row">
+  <input id="newNumber" placeholder="Artikelnummer, z. B. ART-0004">
+  <input id="newBarcode" placeholder="Barcode, z. B. ART-0004">
+</div>
+<input id="newName" placeholder="Artikelname" style="margin-top:8px">
+<div class="row" style="margin-top:8px">
+  <input id="newStock" type="number" min="0" value="0" placeholder="Anfangsbestand">
+  <input id="newMin" type="number" min="0" value="0" placeholder="Mindestbestand">
+</div>
+<div class="row" style="margin-top:8px">
+  <input id="newUnit" value="Stück" placeholder="Einheit">
+  <input id="newLocation" placeholder="Lagerort">
+</div>
+<button class="primary full" onclick="addArticle()">Artikel speichern</button>
+</section>
 
 <section id="editCard" class="card" style="display:none">
 <h2>✏️ Artikel bearbeiten</h2>
@@ -27,25 +44,7 @@
   <button class="primary" onclick="saveArticle()">Änderungen speichern</button>
   <button class="secondary" onclick="cancelEdit()">Abbrechen</button>
 </div>
-<p class="note">Der aktuelle Bestand wird hier nicht direkt überschrieben. Nutze dafür „Entnehmen“ oder „Einlagern“, damit die Bewegungshistorie korrekt bleibt.</p>
-</section>
-<section class="card">
-<h2>➕ Artikel hinzufügen</h2>
-<div class="row">
-  <input id="newNumber" placeholder="Artikelnummer, z. B. ART-004">
-  <input id="newBarcode" placeholder="Barcode, z. B. LAGER-004">
-</div>
-<input id="newName" placeholder="Artikelname, z. B. Sechskantschraube M10 x 40" style="margin-top:8px">
-<div class="row" style="margin-top:8px">
-  <input id="newStock" type="number" min="0" value="0" placeholder="Anfangsbestand">
-  <input id="newMin" type="number" min="0" value="0" placeholder="Mindestbestand">
-</div>
-<div class="row" style="margin-top:8px">
-  <input id="newUnit" value="Stück" placeholder="Einheit">
-  <input id="newLocation" placeholder="Lagerort, z. B. Regal C1">
-</div>
-<button class="primary full" onclick="addArticle()">Artikel speichern</button>
-<p class="note">Der neue Artikel wird sofort zentral gespeichert und ist anschließend auf allen Handys verfügbar.</p>
+<p class="note">Der aktuelle Bestand wird über Einlagern/Entnehmen geändert.</p>
 </section>
 <section class="card"><h2>Bestand</h2><input id="filter" placeholder="Artikel suchen..." oninput="render()"><div id="list"></div></section>
 <section class="card"><h2>Letzte Bewegungen</h2><div id="moves"></div></section></main><div id="toast" class="toast"></div>
@@ -89,10 +88,52 @@ async function book(dir){
   }
 }
 
+async function addArticle(){
+  const artikelnummer=document.getElementById("newNumber").value.trim();
+  const barcodeCode=document.getElementById("newBarcode").value.trim();
+  const name=document.getElementById("newName").value.trim();
+  const bestand=parseInt(document.getElementById("newStock").value,10);
+  const mindestbestand=parseInt(document.getElementById("newMin").value,10);
+  const einheit=document.getElementById("newUnit").value.trim()||"Stück";
+  const lagerort=document.getElementById("newLocation").value.trim();
 
+  if(!name||!barcodeCode){toast("Bitte Artikelname und Barcode eingeben.");return}
+  if(Number.isNaN(bestand)||bestand<0||Number.isNaN(mindestbestand)||mindestbestand<0){
+    toast("Bestand und Mindestbestand müssen gültige Zahlen sein.");return
+  }
+  try{
+    const data=await api("/rest/v1/artikel",{
+      method:"POST",
+      headers:{"Prefer":"return=representation"},
+      body:JSON.stringify({
+        barcode:barcodeCode, artikelnummer:artikelnummer||null, name:name,
+        bestand:bestand, mindestbestand:mindestbestand, einheit:einheit,
+        lagerort:lagerort||null
+      })
+    });
+    const a=Array.isArray(data)?data[0]:data;
+    if(bestand>0&&a){
+      await api("/rest/v1/bewegungen",{
+        method:"POST",
+        body:JSON.stringify({
+          artikel_id:a.id,typ:"Einlagerung",menge:bestand,
+          bestand_vorher:0,bestand_nachher:bestand
+        })
+      });
+    }
+    ["newNumber","newBarcode","newName","newLocation"].forEach(id=>document.getElementById(id).value="");
+    document.getElementById("newStock").value="0";
+    document.getElementById("newMin").value="0";
+    document.getElementById("newUnit").value="Stück";
+    await load(); toast("Artikel erfolgreich angelegt.");
+  }catch(e){
+    console.error(e);
+    const msg=String(e.message||"");
+    toast(msg.includes("duplicate")||msg.includes("unique")?"Dieser Barcode ist bereits vergeben.":"Artikel konnte nicht angelegt werden.");
+  }
+}
 function editArticle(id){
-  const a=articles.find(x=>x.id===id);
-  if(!a)return;
+  const a=articles.find(x=>x.id===id); if(!a)return;
   document.getElementById("editCard").style.display="block";
   document.getElementById("editId").value=a.id;
   document.getElementById("editNumber").value=a.artikelnummer||"";
@@ -101,7 +142,7 @@ function editArticle(id){
   document.getElementById("editMin").value=a.mindestbestand??0;
   document.getElementById("editUnit").value=a.einheit||"Stück";
   document.getElementById("editLocation").value=a.lagerort||"";
-  document.getElementById("editCard").scrollIntoView({behavior:"smooth",block:"start"});
+  document.getElementById("editCard").scrollIntoView({behavior:"smooth"});
 }
 function cancelEdit(){
   document.getElementById("editCard").style.display="none";
@@ -115,155 +156,37 @@ async function saveArticle(){
   const mindestbestand=parseInt(document.getElementById("editMin").value,10);
   const einheit=document.getElementById("editUnit").value.trim()||"Stück";
   const lagerort=document.getElementById("editLocation").value.trim();
-
-  if(!id||!name||!barcodeCode){
-    toast("Bitte Artikelname und Barcode eingeben.");
-    return;
-  }
-  if(Number.isNaN(mindestbestand)||mindestbestand<0){
-    toast("Mindestbestand muss eine gültige Zahl sein.");
-    return;
-  }
-
+  if(!id||!name||!barcodeCode){toast("Bitte Artikelname und Barcode eingeben.");return}
+  if(Number.isNaN(mindestbestand)||mindestbestand<0){toast("Mindestbestand muss gültig sein.");return}
   try{
     const data=await api("/rest/v1/artikel?id=eq."+id,{
-      method:"PATCH",
-      headers:{"Prefer":"return=representation"},
+      method:"PATCH",headers:{"Prefer":"return=representation"},
       body:JSON.stringify({
-        artikelnummer:artikelnummer||null,
-        barcode:barcodeCode,
-        name:name,
-        mindestbestand:mindestbestand,
-        einheit:einheit,
-        lagerort:lagerort||null,
+        artikelnummer:artikelnummer||null,barcode:barcodeCode,name:name,
+        mindestbestand:mindestbestand,einheit:einheit,lagerort:lagerort||null,
         geaendert_am:new Date().toISOString()
       })
     });
-
     const updated=Array.isArray(data)?data[0]:data;
-    if(updated){
-      selected=selected && selected.id===id ? updated : selected;
-    }
-    cancelEdit();
-    await load();
-    if(selected && selected.id===id) show();
+    if(selected&&selected.id===id&&updated)selected=updated;
+    cancelEdit();await load();if(selected&&selected.id===id)show();
     toast("Artikel erfolgreich geändert.");
   }catch(e){
     console.error(e);
     const msg=String(e.message||"");
-    if(msg.includes("duplicate")||msg.includes("unique")){
-      toast("Dieser Barcode ist bereits vergeben.");
-    }else{
-      toast("Artikel konnte nicht geändert werden.");
-    }
+    toast(msg.includes("duplicate")||msg.includes("unique")?"Dieser Barcode ist bereits vergeben.":"Artikel konnte nicht geändert werden.");
   }
 }
-
-async function addArticle(){
-  const artikelnummer=document.getElementById("newNumber").value.trim();
-  const barcodeCode=document.getElementById("newBarcode").value.trim();
-  const name=document.getElementById("newName").value.trim();
-  const bestand=parseInt(document.getElementById("newStock").value,10);
-  const mindestbestand=parseInt(document.getElementById("newMin").value,10);
-  const einheit=document.getElementById("newUnit").value.trim()||"Stück";
-  const lagerort=document.getElementById("newLocation").value.trim();
-
-  if(!name || !barcodeCode){
-    toast("Bitte mindestens Artikelname und Barcode eingeben.");
-    return;
-  }
-  if(Number.isNaN(bestand)||bestand<0||Number.isNaN(mindestbestand)||mindestbestand<0){
-    toast("Bestand und Mindestbestand müssen gültige Zahlen sein.");
-    return;
-  }
-
-  try{
-    const data=await api("/rest/v1/artikel",{
-      method:"POST",
-      headers:{"Prefer":"return=representation"},
-      body:JSON.stringify({
-        barcode:barcodeCode,
-        artikelnummer:artikelnummer||null,
-        name:name,
-        bestand:bestand,
-        mindestbestand:mindestbestand,
-        einheit:einheit,
-        lagerort:lagerort||null
-      })
-    });
-
-    const newArticle=Array.isArray(data)?data[0]:data;
-
-    if(bestand>0 && newArticle){
-      await api("/rest/v1/bewegungen",{
-        method:"POST",
-        body:JSON.stringify({
-          artikel_id:newArticle.id,
-          typ:"Einlagerung",
-          menge:bestand,
-          bestand_vorher:0,
-          bestand_nachher:bestand
-        })
-      });
-    }
-
-    document.getElementById("newNumber").value="";
-    document.getElementById("newBarcode").value="";
-    document.getElementById("newName").value="";
-    document.getElementById("newStock").value="0";
-    document.getElementById("newMin").value="0";
-    document.getElementById("newUnit").value="Stück";
-    document.getElementById("newLocation").value="";
-
-    await load();
-    toast("Artikel erfolgreich angelegt.");
-  }catch(e){
-    console.error(e);
-    const msg=String(e.message||"");
-    if(msg.includes("duplicate")||msg.includes("unique")){
-      toast("Dieser Barcode ist bereits vergeben.");
-    }else{
-      toast("Artikel konnte nicht angelegt werden.");
-    }
-  }
-}
-
-
 async function deleteArticle(id){
-  const a=articles.find(x=>x.id===id);
-  if(!a)return;
-
-  const confirmed=confirm(
-    "Artikel wirklich löschen?\n\n"+
-    a.name+"\n"+
-    "Artikelnummer: "+(a.artikelnummer||"-")+"\n"+
-    "Barcode: "+(a.barcode||"-")+"\n\n"+
-    "Die bisherigen Bewegungen bleiben erhalten, der Artikel selbst wird entfernt."
-  );
-  if(!confirmed)return;
-
+  const a=articles.find(x=>x.id===id); if(!a)return;
+  const ok=confirm("Artikel wirklich löschen?\\n\\n"+a.name+"\\nArtikelnummer: "+(a.artikelnummer||"-")+"\\nBarcode: "+(a.barcode||"-")+"\\n\\nDie zugehörige Bewegungshistorie wird ebenfalls gelöscht.");
+  if(!ok)return;
   try{
-    // Remove movement history first if the database has a foreign-key
-    // without cascade. The user explicitly confirms deletion.
-    await api("/rest/v1/bewegungen?artikel_id=eq."+encodeURIComponent(id),{
-      method:"DELETE"
-    });
-
-    await api("/rest/v1/artikel?id=eq."+encodeURIComponent(id),{
-      method:"DELETE"
-    });
-
-    if(selected && selected.id===id){
-      selected=null;
-      document.getElementById("selected").style.display="none";
-    }
-
-    await load();
-    toast("Artikel wurde gelöscht.");
-  }catch(e){
-    console.error(e);
-    toast("Artikel konnte nicht gelöscht werden.");
-  }
+    await api("/rest/v1/bewegungen?artikel_id=eq."+encodeURIComponent(id),{method:"DELETE"});
+    await api("/rest/v1/artikel?id=eq."+encodeURIComponent(id),{method:"DELETE"});
+    if(selected&&selected.id===id){selected=null;document.getElementById("selected").style.display="none"}
+    await load();toast("Artikel wurde gelöscht.");
+  }catch(e){console.error(e);toast("Artikel konnte nicht gelöscht werden.")}
 }
 
 function render(){let q=document.getElementById("filter").value.toLowerCase(),f=articles.filter(a=>(a.name+" "+(a.artikelnummer||"")+" "+a.barcode+" "+(a.lagerort||"")).toLowerCase().includes(q));document.getElementById("list").innerHTML=f.map(a=>`<div class="article" onclick="selectArticle(${a.id})" style="cursor:pointer"><div><strong>${a.name}</strong><small>${a.artikelnummer||""} · ${a.lagerort||""} · ${a.barcode}</small></div><div class="stock ${a.bestand<=a.mindestbestand?"low":""}">${a.bestand} ${a.einheit}<br><button class="secondary" style="margin-top:6px;min-height:38px;padding:6px 10px" onclick="event.stopPropagation();selectArticle(${a.id})">Auswählen</button>
